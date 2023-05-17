@@ -17,8 +17,11 @@ EOS_token = 1 # end of string
 class Lang():
     '''
         This is a helper sub that will keep track of unique words.
-        We split every sentence into words and tack how often the words are seen and
-        index each word.
+        We split every sentence into words and track each unique word and how many times it is seen
+        
+        word2index = { word: index }
+        index2word = { index: word }
+        word2count = { word: count }
     '''
     def __init__(self, name):
         self.name = name
@@ -41,24 +44,6 @@ class Lang():
             self.word2count[word] += 1
 
 
-# input data is in Unicode, we will covert to ASCII for simplicities sake
-# 
-# Thanks to > https://stackoverflow.com/a/518232/2809427
-def unicodeToAscii(s):
-    return ''.join(
-        c for c in unicodedata.normalize('NFD', s)
-        if unicodedata.category(c) != 'Mn'
-    )
-
-# Make data lowercase, trim, and remove non-letter characters using regex
-# For more reading on Regex > https://regex101.com/ || https://docs.python.org/3/library/re.html
-def normalizeString(s):
-    s = unicodeToAscii(s.lower().strip())
-    s = re.sub(r"([.!?])", r" \1", s) # Match a single character present in the list below [.!?] and insert a space before that character. e.g. 'Hello!' -> 'Hello !'
-    # Maybe we dont want this? || s = re.sub(r"[^a-zA-Z.!?]+", r" ", s) # Match a single character not present in the list below [^a-zA-Z.!?] and replace it with ' '(space) e.g. 'I'm here' -> 'I m here'
-    return s
-        
-
 def readTextFile(lang1, lang2, reverse_translation=False):
     print('Reading Text File...')
 
@@ -67,7 +52,7 @@ def readTextFile(lang1, lang2, reverse_translation=False):
         read().strip().split('\n')
 
     # split everyline into pairs and normalize
-    pairs = [[normalizeString(string) for string in line.split('\t')[:2]] for line in lines]
+    pairs = [[string for string in line.split('\t')[:2]] for line in lines]
 
     if reverse_translation:
         pairs = [list(reversed(pair)) for pair in pairs]
