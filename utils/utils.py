@@ -1,3 +1,4 @@
+from curses import noraw
 import wandb
 import torch
 import torch.nn 
@@ -6,10 +7,12 @@ import torchvision.transforms as transforms
 from models.models import *
 
 import unicodedata
-import re # Regex library
+import re
+import random
 
-SOS_token = 0
-EOS_token = 1
+
+SOS_token = 0 # start of string
+EOS_token = 1 # end of string
 
 class Lang():
     '''
@@ -36,25 +39,7 @@ class Lang():
             self.n_words += 1
         else:
             self.word2count[word] += 1
-'''
-def extract_characters(text_file_path):
 
-        @param text_file_path - String
-
-        In this function we will split the text file into inputs and outputs
-    # these will be the lists of all sentences
-    input_texts = []
-    target_texts = []
-
-    # these will be unique sets that contain all the seen characters
-    input_characters = set()
-    target_characters = set()
-
-    lines = open(text_file_path).read().split('\n')
-
-    for line in lines:
-        input_text, target_text = line.split('\t')
-'''
 
 # input data is in Unicode, we will covert to ASCII for simplicities sake
 # 
@@ -65,19 +50,57 @@ def unicodeToAscii(s):
         if unicodedata.category(c) != 'Mn'
     )
 
-# Lowercase
-# Make trim, and remove non-letter characters using regex
+# Make data lowercase, trim, and remove non-letter characters using regex
+# For more reading on Regex > https://regex101.com/ || https://docs.python.org/3/library/re.html
 def normalizeString(s):
     s = unicodeToAscii(s.lower().strip())
     s = re.sub(r"([.!?])", r" \1", s) # Match a single character present in the list below [.!?] and insert a space before that character. e.g. 'Hello!' -> 'Hello !'
-    s = re.sub(r"[^a-zA-Z.!?]+", r" ", s) # Match a single character not present in the list below [^a-zA-Z.!?] and replace it with ' '(space) e.g. 'I'm here' -> 'I m here'
+    # Maybe we dont want this? || s = re.sub(r"[^a-zA-Z.!?]+", r" ", s) # Match a single character not present in the list below [^a-zA-Z.!?] and replace it with ' '(space) e.g. 'I'm here' -> 'I m here'
     return s
         
+
+def readTextFile(lang1, lang2, reverse_translation=False):
+    print('Reading Text File...')
+
+    # Open file and split into lines
+    lines = open(f'datasets/{lang1}_{lang2}.txt', encoding='utf-8').\
+        read().strip().split('\n')
+
+    # split everyline into pairs and normalize
+    pairs = [[normalizeString(string) for string in line.split('\t')[:2]] for line in lines]
+
+    if reverse_translation:
+        pairs = [list(reversed(pair)) for pair in pairs]
+        input_lang = Lang(lang2)
+        output_lang = Lang(lang1)
+    else:
+        input_lang = Lang(lang1)
+        output_lang = Lang(lang2)
+
+    return input_lang, output_lang, pairs
+
+def prepareData(lang1='eng', lang2='deu', reverse=False):
+    input_lang, output_lang, pairs = readTextFile(lang1, lang2, False)
+    print(f'Total sentence pairs: {len(pairs)}')
+    for pair in pairs:
+        input_lang.addSentence(pair[0])
+        output_lang.addSentence(pair[1])
+    print(f'Total words:')
+    print(input_lang.name, input_lang.n_words)
+    print(output_lang.name, output_lang.n_words)
+
+    print(random.choice(pairs))
+
+    return input_lang, output_lang, pairs
+
 
 
 ### Functions below were already in the utils.py file - everything above this line was written by us
 
 def get_data(slice=1, train=True):
+    '''
+        This function must be rebuilt
+    '''
     full_dataset = torchvision.datasets.MNIST(root=".",
                                               train=train, 
                                               transform=transforms.ToTensor(),
