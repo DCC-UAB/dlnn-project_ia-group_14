@@ -6,11 +6,32 @@ import torch
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class EncoderRNN(nn.Module):
-    pass
+    def __init__(self, input_size, hidden_size):
+        super(EncoderRNN, self).__init__()
+        self.hidden_size = hidden_size
+        self.embedding = nn.Embedding(input_size, hidden_size)
+        self.gru = nn.GRU(hidden_size, hidden_size)
+
+    def forward(self, input_seq):
+        embedded = self.embedding(input_seq)
+        outputs, hidden = self.gru(embedded)
+        return outputs, hidden
 
 class DecoderRNN(nn.Module):
-    pass
+    def __init__(self, output_size, hidden_size):
+        super(DecoderRNN, self).__init__()
+        self.hidden_size = hidden_size
+        self.embedding = nn.Embedding(output_size, hidden_size)
+        self.gru = nn.GRU(hidden_size, hidden_size)
+        self.fc = nn.Linear(hidden_size, output_size)
+        self.softmax = nn.Softmax(dim=2)
 
+    def forward(self, input_seq, hidden):
+        embedded = self.embedding(input_seq)
+        output, hidden = self.gru(embedded, hidden)
+        output = self.fc(output)
+        output = self.softmax(output)
+        return output, hidden
 
 # Conventional and convolutional neural network - This is the old nn
 
