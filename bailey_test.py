@@ -151,6 +151,12 @@ def train(input, target, encoder, decoder, encoder_optim, decoder_optim, criteri
 # DATASET
 
 class DatasetFromTextFile():
+    '''
+        This class will read the text file and extract each sentence from 
+        input and target languages.
+
+        next it encodes the data so that it can be read by the model
+    '''
     def __init__(self, data_path, num_of_samples):
         self.input_characters, self.target_characters, \
         self.input_texts, self.target_texts \
@@ -158,6 +164,8 @@ class DatasetFromTextFile():
 
         self.input_char_index = dict([(char, i) for i, char in enumerate(self.input_characters)])
         self.target_char_index = dict([(char, i) for i, char in enumerate(self.target_characters)])
+
+        print(self.input_char_index)
 
         self.num_input_chars = len(self.input_characters)
         self.num_target_chars = len(self.target_characters)
@@ -168,6 +176,11 @@ class DatasetFromTextFile():
 
 
     def _extract_characters(self, data_path, num_of_samples):
+        '''
+            Open the file and split lines and tabs
+            store input and target texts
+            record each unique character
+        '''
         input_texts = []
         target_texts = []
         
@@ -198,7 +211,14 @@ class DatasetFromTextFile():
         return input_characters, target_characters, input_texts, target_texts
 
     def _encode_characters(self):
-        # We need to encode the dataset using one hot enconding
+        '''
+            For the model to be able to understand the data we create a dictionary
+            that will store each character as a number
+            e.g.
+            {' ': 0, '!': 1, 'A': 2, 'B': 3, 'C': 4, ... 'z': 69}
+
+            input tensor shape is (number of samples, input sentence(with padding), number of unique characters)
+        '''
         max_encoder_seq_length = max([len(txt) for txt in self.input_texts])
         max_decoder_seq_length = max([len(txt) for txt in self.target_texts]) 
 
@@ -219,10 +239,11 @@ class DatasetFromTextFile():
         return encoded_input_data, decoded_input_data, decoded_target_data
 
     def get_data(self):
-        return torch.from_numpy(self.encoded_input_data), torch.from_numpy(self.decoded_target_data)
+        return torch.from_numpy(self.encoded_input_data).int(), torch.from_numpy(self.decoded_target_data).int()
 
 
 if __name__ == '__main__':
+    # Firstly we want to extract the data from the datafile
     data_path = 'datasets/deu.txt'
     GermanData = DatasetFromTextFile(data_path, num_of_samples=10000        )
 
