@@ -5,14 +5,18 @@ import torch.nn as nn
 from torch import optim
 import torch.nn.functional as F
 import random
+import numpy as np
 
-from utils.utils import EOS_token, SOS_token
+from utils.utils import EOS_token, SOS_token, encoding_characters
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 max_length = 100
 
 SOS_token = 0
 EOS_token = 1
+
+#########
+# MODELS
 
 class EncoderRNN(nn.Module):
     def __init__(self, input_size, hidden_size):
@@ -70,33 +74,35 @@ class AttnDecoderRNN(nn.Module):
         return torch.zeros(1, 1, self.hidden_size, device=device)
 
 
+##########
+# TRAINING
 
-
-
-
-        
-
-hidden_size = 256
-# encoder = EncoderRNN(number_of_input_characters, hidden_size)
-# decoder = AttnDecoderRNN(hidden_size, number_of_output_characters)
-
-# train(encoder, decoder, n_iters=75000, print_every=5000)
-
-
-def trainingLoop(encoder, decoder, n_iters, learning_rate=0.01):
-    plot_losses = []
+def training_loop(dataset, encoder, decoder, n_iters, learning_rate=0.01):
+    print_loss_total = 0
 
     encoder_optim = optim.SGD(encoder.parameters(), lr=learning_rate)
-    encoder_optim = optim.SGD(decoder.parameters(), lr=learning_rate)
+    decoder_optim = optim.SGD(decoder.parameters(), lr=learning_rate)
 
     criterion = nn.NLLLoss()
 
-    training_data = [] # this will be a object that has 2 tensors one containing the input, the other containing target texts
+    input_data, target_data = dataset.get_data() # this will be a object that has 2 tensors one containing the input, the other containing target texts
 
-    for iter in range(1, n_iters + 1):
-        input_text, target_text = training_data[iter - 1]
+    for iter in range(1, n_iters + 1): # could this be changed to range(0, n_iters)
+        input_text = input_data[iter - 1]
+        target_text = target_data[iter - 1]
 
-def train(input, target, encoder, decoder, encoder_optim, decoder_optim, criterion, max_length=max_length, teacher_forcing_ratio = 0.5):
+        loss = train(input_text, target_text, encoder, decoder, encoder_optim, decoder_optim, criterion)
+
+        print_loss_total += loss
+        plot_loss_total += loss
+
+        if iter % 1000 == 0:
+            print_loss_avg = print_loss_total / 1000
+            print_loss_total = 0
+            print(f'iteration: {iter} / {n_iters} | loss: {print_loss_avg}') 
+
+
+def train(input, target, encoder, decoder, encoder_optim, decoder_optim, criterion, teacher_forcing_ratio = 0.5):
     hidden = encoder.initHidden()
 
     encoder_optim.zero_grad()
@@ -105,14 +111,14 @@ def train(input, target, encoder, decoder, encoder_optim, decoder_optim, criteri
     input_length = input.size(0)
     target_length = target.size(0)
 
-    encoder_outputs = torch.zero(max_length, encoder.hidden_size, device=device)
+    encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
 
     loss = 0
 
     for char in input:
         # loop over input and give each character to encoder one at a time
         encoder_output, hidden = encoder(
-            input[char], hidden
+            char, hidden
         )
         encoder_outputs[char] = encoder_output[0, 0]
 
@@ -141,18 +147,27 @@ def train(input, target, encoder, decoder, encoder_optim, decoder_optim, criteri
                 break
 
 
-
-
-
-
+#########
+# DATASET
 
 class DatasetFromTextFile():
-    def __init__(self, data_path):
+    def __init__(self, data_path, num_of_samples):
         self.input_characters, self.target_characters, \
-        self.input_sentences, self.target_sentences \
-            = self._extract_characters(data_path)
+        self.input_texts, self.target_texts \
+            = self._extract_characters(data_path, num_of_samples)
 
-    def _extract_characters(self, data_path):
+        self.input_char_index = dict([(char, i) for i, char in enumerate(self.input_characters)])
+        self.target_char_index = dict([(char, i) for i, char in enumerate(self.target_characters)])
+
+        self.num_input_chars = len(self.input_characters)
+        self.num_target_chars = len(self.target_characters)
+        
+        self.encoded_input_data, self.decoded_input_data, self.decoded_target_data \
+            = self._encode_characters()
+
+
+
+    def _extract_characters(self, data_path, num_of_samples):
         input_texts = []
         target_texts = []
         
@@ -163,13 +178,13 @@ class DatasetFromTextFile():
 
         print(str(len(lines) - 1))
 
-        for line in lines:
+        for line in lines[: min(num_of_samples, len(lines) -1)]:
             input_text, target_text = line.split('\t')[:2]
             target_text = '\t' + target_text + '\n'
             input_texts.append(input_text)
             target_texts.append(target_text)
 
-            for char in input_texts:
+            for char in input_text:
                 if char not in input_characters:
                     input_characters.add(char)
             
@@ -181,3 +196,39 @@ class DatasetFromTextFile():
         target_characters = sorted(list(target_characters))
 
         return input_characters, target_characters, input_texts, target_texts
+
+    def _encode_characters(self):
+        # We need to encode the dataset using one hot enconding
+        max_encoder_seq_length = max([len(txt) for txt in self.input_texts])
+        max_decoder_seq_length = max([len(txt) for txt in self.target_texts]) 
+
+        encoded_input_data = np.zeros((len(self.input_texts), max_encoder_seq_length, self.num_input_chars), dtype='float32') # (261499, 537, 103)
+        decoded_input_data = np.zeros((len(self.input_texts), max_decoder_seq_length, self.num_target_chars), dtype='float32') # (261499, 493, 126)
+        decoded_target_data = np.zeros((len(self.input_texts), max_decoder_seq_length, self.num_target_chars), dtype='float32') # (261499, 493, 126)
+
+        for i, (input_text, target_text) in enumerate(zip(self.input_texts, self.target_texts)):
+            for t, char in enumerate(input_text):
+                encoded_input_data[i, t, self.input_char_index[char]] = 1.
+
+            for t, char in enumerate(target_text):
+                decoded_input_data[i, t, self.target_char_index[char]] = 1
+
+                if t > 0:
+                    decoded_target_data[i, t - 1, self.target_char_index[char]] = 1
+
+        return encoded_input_data, decoded_input_data, decoded_target_data
+
+    def get_data(self):
+        return torch.from_numpy(self.encoded_input_data), torch.from_numpy(self.decoded_target_data)
+
+
+if __name__ == '__main__':
+    data_path = 'datasets/deu.txt'
+    GermanData = DatasetFromTextFile(data_path, num_of_samples=10000        )
+
+    hidden_size = 256
+
+    encoder = EncoderRNN(GermanData.num_input_chars, hidden_size)
+    decoder = AttnDecoderRNN(hidden_size, GermanData.num_target_chars)
+
+    training_loop(GermanData, encoder, decoder, n_iters=50000)
