@@ -94,7 +94,6 @@ def training_loop(dataset, encoder, decoder, n_iters, learning_rate=0.01):
         loss = train(input_text, target_text, encoder, decoder, encoder_optim, decoder_optim, criterion)
 
         print_loss_total += loss
-        plot_loss_total += loss
 
         if iter % 1000 == 0:
             print_loss_avg = print_loss_total / 1000
@@ -140,7 +139,7 @@ def train(input, target, encoder, decoder, encoder_optim, decoder_optim, criteri
                 decoder_input, hidden, encoder_outputs
             )
             topv, topi = decoder_output.topk(1)
-            decoder_input = topi.squeeze.detach() 
+            decoder_input = topi.squeeze().detach() #parenthesis on a seq2Seq tutorial
 
             loss += criterion(decoder_output, target[char])
             if decoder_input.item() == EOS_token:
