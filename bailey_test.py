@@ -71,10 +71,22 @@ class AttnDecoderRNN(nn.Module):
         return torch.zeros(1, 1, self.hidden_size, device=device)
 
 
+#saving function
+def save_model(encoder, decoder, path):
+    torch.save({
+        'encoder_state_dict': encoder.state_dict(),
+        'decoder_state_dict': decoder.state_dict(),
+    }, path)
+    print("Model saved at", path)
 
+#evaluation function
+def load_model(encoder, decoder, path):
+    checkpoint = torch.load(path)
+    encoder.load_state_dict(checkpoint['encoder_state_dict'])
+    decoder.load_state_dict(checkpoint['decoder_state_dict'])
+    print("Model loaded from", path)
 
-
-
+###
         
 
 hidden_size = 256
