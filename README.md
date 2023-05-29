@@ -37,6 +37,7 @@ python main.py
 ## Contributors
 1675495 - Bailey Yates Armitage\
 1630353 - Pablo García Villagrasa
+1679434 - Sixtine Lorphelin
 
 
 Xarxes Neuronals i Aprenentatge Profund
