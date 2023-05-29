@@ -23,17 +23,17 @@ class EncoderRNN(nn.Module):
         super(EncoderRNN, self).__init__()
         self.hidden_size = hidden_size
 
-        self.embedding = nn.Embedding(input_size, hidden_size)
-        self.gru = nn.GRU(hidden_size, hidden_size)
+        self.embedding = nn.Embedding(input_size, 300)
+        self.gru = nn.GRU(300, hidden_size)
 
     def forward(self, input, hidden):
-        embedded = self.embedding(input).view(1, 1, -1)
-        output = embedded
-        output, hidden = self.gru(output, hidden)
+        embedded = self.embedding(input)
+        print(input.shape, hidden.shape)
+        output, hidden = self.gru(embedded, hidden)
         return output, hidden
 
     def initHidden(self):
-        return torch.zeros(1, 1, self.hidden_size, device=device)
+        return torch.zeros(1, self.hidden_size, device=device)
 
     
 class AttnDecoderRNN(nn.Module):
@@ -107,15 +107,13 @@ def train(input, target, encoder, decoder, encoder_optim, decoder_optim, criteri
     encoder_optim.zero_grad()
     decoder_optim.zero_grad()
 
-    input_length = input.size(0)
-    target_length = target.size(0)
-
     encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
 
     loss = 0
 
+    print(input, input.shape)
+
     for char in input:
-        # loop over input and give each character to encoder one at a time
         encoder_output, hidden = encoder(
             char, hidden
         )
@@ -139,7 +137,7 @@ def train(input, target, encoder, decoder, encoder_optim, decoder_optim, criteri
                 decoder_input, hidden, encoder_outputs
             )
             topv, topi = decoder_output.topk(1)
-            decoder_input = topi.squeeze().detach() #parenthesis on a seq2Seq tutorial
+            decoder_input = topi.squeeze.detach() 
 
             loss += criterion(decoder_output, target[char])
             if decoder_input.item() == EOS_token:
@@ -162,9 +160,7 @@ class DatasetFromTextFile():
             = self._extract_characters(data_path, num_of_samples)
 
         self.input_char_index = dict([(char, i) for i, char in enumerate(self.input_characters)])
-        self.target_char_index = dict([(char, i) for i, char in enumerate(self.target_characters)])
-
-        print(self.input_char_index)
+        self.target_char_index = dict([(char, i) for i, char in enumerate(self.target_characters)]) 
 
         self.num_input_chars = len(self.input_characters)
         self.num_target_chars = len(self.target_characters)
@@ -226,6 +222,8 @@ class DatasetFromTextFile():
         decoded_target_data = np.zeros((len(self.input_texts), max_decoder_seq_length, self.num_target_chars), dtype='float32') # (261499, 493, 126)
 
         for i, (input_text, target_text) in enumerate(zip(self.input_texts, self.target_texts)):
+            print(len(input_text))
+            break
             for t, char in enumerate(input_text):
                 encoded_input_data[i, t, self.input_char_index[char]] = 1.
 
@@ -244,11 +242,13 @@ class DatasetFromTextFile():
 if __name__ == '__main__':
     # Firstly we want to extract the data from the datafile
     data_path = 'datasets/deu.txt'
-    GermanData = DatasetFromTextFile(data_path, num_of_samples=10000        )
+    german_data = DatasetFromTextFile(data_path, num_of_samples=10000)
+
+    print(german_data.input_char_index)
 
     hidden_size = 256
 
-    encoder = EncoderRNN(GermanData.num_input_chars, hidden_size)
-    decoder = AttnDecoderRNN(hidden_size, GermanData.num_target_chars)
+    encoder = EncoderRNN(german_data.num_input_chars, hidden_size)
+    decoder = AttnDecoderRNN(hidden_size, german_data.num_target_chars)
 
-    training_loop(GermanData, encoder, decoder, n_iters=50000)
+    training_loop(german_data, encoder, decoder, n_iters=50000)
