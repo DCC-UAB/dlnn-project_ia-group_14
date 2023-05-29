@@ -16,7 +16,8 @@ https://github.com/OValery16/Language-Translation-with-deep-learning-
 
 
 ## Code structure
-You must create as many folders as you consider. You can use the proposed structure or replace it by the one in the base code that you use as starting point. Do not forget to add Markdown files as needed to explain well the code and how to use it.
+As of now all the code exists in the bailey_test.py file.
+We have had trouble getting the models to train and for simplicity reasons I (Bailey) have wrote all my code in one file.
 
 ## Example Code
 The given code is a simple CNN example training on the MNIST dataset. It shows how to set up the [Weights & Biases](https://wandb.ai/site)  package to monitor how your network is learning, or not.
