@@ -93,7 +93,113 @@ def encode_data(input_chars, target_chars, input_texts, target_texts):
 
     return encoder_input_data, decoder_input_data, decoder_target_data, input_char_to_index, target_char_to_index, max_encoder_seq_length, max_decoder_seq_length
 
+def modelTranslation2(num_encoder_tokens, num_decoder_tokens, latent_dim):
+    # the GRU model applied in the way of the starting point
 
+    class Encoder(nn.Module):
+        def __init__(self, input_size, hidden_size):
+            super(Encoder, self).__init__()
+            self.hidden_size = hidden_size
+            self.embedding = nn.Embedding(input_size, hidden_size)
+            self.gru = nn.GRU(hidden_size, hidden_size)
+
+        def forward(self, input):
+            embedded = self.embedding(input)
+            output, hidden = self.gru(embedded)
+            return output, hidden
+
+    class Decoder(nn.Module):
+        def __init__(self, hidden_size, output_size):
+            super(Decoder, self).__init__()
+            self.hidden_size = hidden_size
+            self.embedding = nn.Embedding(output_size, hidden_size)
+            self.gru = nn.GRU(hidden_size, hidden_size)
+            self.out = nn.Linear(hidden_size, output_size)
+            self.softmax = nn.LogSoftmax(dim=2)
+
+        def forward(self, input, hidden):
+            embedded = self.embedding(input)
+            output, hidden = self.gru(embedded, hidden)
+            output = self.out(output)
+            output = self.softmax(output)
+            return output, hidden
+
+    encoder = Encoder(num_encoder_tokens, latent_dim)
+    decoder = Decoder(latent_dim, num_decoder_tokens)
+
+    return encoder, decoder
+
+def modelTranslation(num_encoder_tokens, num_decoder_tokens, latent_dim):
+    # LSTM based on the starting point
+
+    class Encoder(nn.Module):
+        def __init__(self, input_size, hidden_size):
+            super(Encoder, self).__init__()
+            self.hidden_size = hidden_size
+            self.embedding = nn.Embedding(input_size, hidden_size)
+            self.lstm = nn.LSTM(hidden_size, hidden_size)
+
+        def forward(self, input):
+            embedded = self.embedding(input)
+            output, hidden = self.lstm(embedded)
+            return output, hidden
+
+    class Decoder(nn.Module):
+        def __init__(self, hidden_size, output_size):
+            super(Decoder, self).__init__()
+            self.hidden_size = hidden_size
+            self.embedding = nn.Embedding(output_size, hidden_size)
+            self.lstm = nn.LSTM(hidden_size, hidden_size)
+            self.out = nn.Linear(hidden_size, output_size)
+            self.softmax = nn.LogSoftmax(dim=2)
+
+        def forward(self, input, hidden):
+            embedded = self.embedding(input)
+            output, hidden = self.lstm(embedded, hidden)
+            output = self.out(output)
+            output = self.softmax(output)
+            return output, hidden
+
+    encoder = Encoder(num_encoder_tokens, latent_dim)
+    decoder = Decoder(latent_dim, num_decoder_tokens)
+
+    return encoder, decoder
+
+def generate_inference_model(encoder, decoder, input_token_index, target_token_index, latent_dim):
+#still to fix/unify calls to encoder decoder and models
+    class EncoderInference(nn.Module):
+        def __init__(self, encoder):
+            super(EncoderInference, self).__init__()
+            self.encoder = encoder
+
+        def forward(self, input):
+            output, hidden = self.encoder(input)
+            return hidden
+
+    class DecoderInference(nn.Module):
+        def __init__(self, decoder):
+            super(DecoderInference, self).__init__()
+            self.decoder = decoder
+
+        def forward(self, input, hidden):
+            output, hidden = self.decoder(input, hidden)
+            return output, hidden
+
+    encoder_inference = EncoderInference(encoder)
+    decoder_inference = DecoderInference(decoder)
+
+    # sequences back to something readable.
+    reverse_input_char_index = dict((i, char) for char, i in input_token_index.items())
+    reverse_target_char_index = dict((i, char) for char, i in target_token_index.items())
+
+    return encoder_inference, decoder_inference, reverse_target_char_index
+
+
+def load_encoder_decoder_model(encoder_path, decoder_path):
+    # for th weights
+    encoder_model = torch.load(encoder_path)
+    decoder_model = torch.load(decoder_path)
+    return encoder_model, decoder_model
 
 
 ##########
