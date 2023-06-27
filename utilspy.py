@@ -202,7 +202,7 @@ def load_encoder_decoder_model(encoder_path, decoder_path):
     return encoder_model, decoder_model
 
 
-##########
+#####################################################################################################
 #import the necesseray modules of Pytorch, numpy and pickle
 
 import torch
@@ -230,33 +230,29 @@ def loadEncoderDecoderModel():
     decoder_model= DataLoader(decoder_path)
     return encoder_model,decoder_model
 
-def decode_sequence(input_seq,encoder_model,decoder_model,num_decoder_tokens,target_token_index,reverse_target_char_index):\
-# We run the model and predict the translated sentence
-
+def decode_sequence(input_seq, encoder_model, decoder_model, num_decoder_tokens, target_token_index, reverse_target_char_index):
     # We encode the input
-    states_value = encoder_model.predict(input_seq)
+    states_value = encoder_model(input_seq)
 
-    
     target_seq = np.zeros((1, 1, num_decoder_tokens))
-    
     target_seq[0, 0, target_token_index['\t']] = 1.
-
 
     stop_condition = False
     decoded_sentence = ''
-    # We predict the output letter by letter 
+    # We predict the output letter by letter
     while not stop_condition:
-        output_tokens, h, c = decoder_model.predict(
-            [target_seq] + states_value)
+        output_tokens, h, c = decoder_model(torch.from_numpy(target_seq), states_value)
 
-        # We translate the token in hamain language
+        # Convert output_tokens to numpy array
+        output_tokens = output_tokens.detach().numpy()
+
+        # We translate the token in human language
         sampled_token_index = np.argmax(output_tokens[0, -1, :])
         sampled_char = reverse_target_char_index[sampled_token_index]
         decoded_sentence += sampled_char
 
         # We check if it is the end of the string
-        if (sampled_char == '\n' or
-           len(decoded_sentence) > 500):
+        if sampled_char == '\n' or len(decoded_sentence) > 500:
             stop_condition = True
 
         target_seq = np.zeros((1, 1, num_decoder_tokens))
