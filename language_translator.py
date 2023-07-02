@@ -156,7 +156,7 @@ optimizer = optim.Adam(model.parameters(), lr=lr)
 test_sentence = 'Franz jagt im komplett verwahrlosten Taxi quer durch Bayern'
 
 if load_model:
-    load_checkpoint(torch.load('checkpoint_pth.ptar'), model, optimizer)
+    load_checkpoint(torch.load('checkpoint_pth.tar'), model, optimizer)
 
 for epoch in range(num_epochs):
     print(f'Epoch: {epoch} / {num_epochs}')
