@@ -1,123 +1,54 @@
-from curses import noraw
-import wandb
 import torch
-import torch.nn 
-import torchvision
-import torchvision.transforms as transforms
-from models.models import *
+import spacy
+import sys
 
-import unicodedata
-import re
-import random
+def translate_sentence (model, test_sentence, german, english, device, max_length=50):
+    
+    spacy_german = spacy.load("de")
 
-
-SOS_token = 0 # start of string
-EOS_token = 1 # end of string
-
-class Lang():
-    '''
-        This is a helper sub that will keep track of unique words.
-        We split every sentence into words and track each unique word and how many times it is seen
-        
-        word2index = { word: index }
-        index2word = { index: word }
-        word2count = { word: count }
-    '''
-    def __init__(self, name):
-        self.name = name
-        self.word2index = {}
-        self.word2count = {}
-        self.index2word = {0: 'SOS', 1: 'EOS'}
-        self.n_words = 2 # count SOS and EOS
-
-    def addSentence(self, sentence):
-        for word in sentence.split(' '):
-            self.addWord(word)
-
-    def addWord(self, word):
-        if word not in self.word2index:
-            self.word2index[word] = self.n_words
-            self.word2count[word] = 1
-            self.index2word[self.n_words] = word
-            self.n_words += 1
-        else:
-            self.word2count[word] += 1
-
-
-def readTextFile(lang1, lang2, reverse_translation=False):
-    print('Reading Text File...')
-
-    # Open file and split into lines
-    lines = open(f'datasets/{lang1}_{lang2}.txt', encoding='utf-8').\
-        read().strip().split('\n')
-
-    # split everyline into pairs and normalize
-    pairs = [[string for string in line.split('\t')[:2]] for line in lines]
-
-    if reverse_translation:
-        pairs = [list(reversed(pair)) for pair in pairs]
-        input_lang = Lang(lang2)
-        output_lang = Lang(lang1)
+    #create the tokens
+    if type(test_sentence) == str:
+        tokens = [token.text.lower() for token in spacy_german(test_sentence)]
     else:
-        input_lang = Lang(lang1)
-        output_lang = Lang(lang2)
+        tokens = [token.lower() for token in test_sentence]
 
-    return input_lang, output_lang, pairs
+    tokens.insert(0, german.init_token)
+    tokens.append(german.eos_token)
 
-def prepareData(lang1='eng', lang2='deu', reverse=False):
-    input_lang, output_lang, pairs = readTextFile(lang1, lang2, False)
-    print(f'Total sentence pairs: {len(pairs)}')
-    for pair in pairs:
-        input_lang.addSentence(pair[0])
-        output_lang.addSentence(pair[1])
-    print(f'Total words:')
-    print(input_lang.name, input_lang.n_words)
-    print(output_lang.name, output_lang.n_words)
+    #make a tensor with index of each german token
+    index_text = [german.vocab.stoi[token] for token in tokens]
+    text_tensor = torch.LongTensor(index_text).unsqueeze(1).to(device)
 
-    print(random.choice(pairs))
-
-    return input_lang, output_lang, pairs
-
-
-
-### Functions below were already in the utils.py file - everything above this line was written by us
-
-def get_data(slice=1, train=True):
-    '''
-        This function must be rebuilt
-    '''
-    full_dataset = torchvision.datasets.MNIST(root=".",
-                                              train=train, 
-                                              transform=transforms.ToTensor(),
-                                              download=True)
-    #  equiv to slicing with [::slice] 
-    sub_dataset = torch.utils.data.Subset(
-      full_dataset, indices=range(0, len(full_dataset), slice))
+    #encoder hidden,cell state
+    with torch.no_grad():
+        hidden, cell = model.encoder(text_tensor)
     
-    return sub_dataset
+    output = [english.vocab.stoi["<sos>"]]
+
+    for _ in range(max_length):
+        previous_word = torch.LongTensor([output[-1]]).to(device)
+
+        with torch.no_grad():
+            output, hidden, cell = model.decoder(previous_word, hidden, cell)
+            guess = output.argmax(1).item()
+
+        output.append(guess)
+
+        # for the end of the sentence
+        if output.argmax(1).item() == english.vocab.stoi["<eos>"]:
+            break
+
+    translated = [english.vocab.itos[idx] for idx in output]
+
+    return translated[1:]
 
 
-def make_loader(dataset, batch_size):
-    loader = torch.utils.data.DataLoader(dataset=dataset,
-                                         batch_size=batch_size, 
-                                         shuffle=True,
-                                         pin_memory=True, num_workers=2)
-    return loader
+def save_checkpoint (checkpoint, filename="checkpoint.pth.tar"):
+    print("=> Saving checkpoint")
+    torch.save(checkpoint, filename)
 
 
-def make(config, device="cuda"):
-    # Make the data
-    train, test = get_data(train=True), get_data(train=False)
-    train_loader = make_loader(train, batch_size=config.batch_size)
-    test_loader = make_loader(test, batch_size=config.batch_size)
-
-    # Make the model
-    model = ConvNet(config.kernels, config.classes).to(device)
-
-    # Make the loss and optimizer
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(
-        model.parameters(), lr=config.learning_rate)
-    
-    return model, train_loader, test_loader, criterion, optimizer
-
+def load_checkpoint(checkpoint, model, optimizer):
+    print("=> Loading checkpoint")
+    model.load_state_dict(checkpoint["state_dict"])
+    optimizer.load_state_dict(checkpoint["optimizer"])
