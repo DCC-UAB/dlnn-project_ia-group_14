@@ -139,7 +139,7 @@ train_iter, valid_iter, test_iter = BucketIterator.splits(
     (train_data, validation_data, test_data),
     batch_size=batch_size,
     sort_within_batch=True,
-    sprt_key=lambda x: len(x.src)
+    sprt_key=lambda x: len(x.src),
     device=device
 )
 
