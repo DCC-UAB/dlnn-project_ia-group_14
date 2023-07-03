@@ -30,12 +30,12 @@ def translate_sentence (model, test_sentence, german, english, device, max_lengt
 
         with torch.no_grad():
             output, hidden, cell = model.decoder(previous_word, hidden, cell)
-            guess = output.argmax(1).item()
+            guess = output.argmax().item()
 
         outputs.append(guess)
 
         # for the end of the sentence
-        if output.argmax(1).item() == english.vocab.stoi["<eos>"]:
+        if output.argmax().item() == english.vocab.stoi["<eos>"]:
             break
 
     translated = [english.vocab.itos[word] for word in outputs]
