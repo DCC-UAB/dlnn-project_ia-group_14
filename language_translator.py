@@ -37,12 +37,7 @@ train_data, validation_data, test_data=Multi30k.splits(
 german.build_vocab(train_data, max_size=10000, min_freq=2)
 english.build_vocab(train_data, max_size=10000, min_freq=2)
 
-print(f"Unique tokens in source (de) vocabulary: {len(german.vocab)}")
-print(f"Unique tokens in target (en) vocabulary: {len(english.vocab)}")
-
-print(vars(train_data.examples[0]))
-
-
+print(vars(train_data.examples[11]))
 
 # MODELS
 class Encoder(nn.Module):
@@ -79,15 +74,15 @@ class Decoder(nn.Module):
     
     def forward(self, x, hidden, cell):
         x = x.unsqueeze(0)
-        # x shape:(1, N)
+        # x shape:(1, batch_size)
 
         embedding=self.dropout(self.embedding(x))
-        # embedding shape: (1, N, embedding_size)
+        # embedding shape: (1, batch_size, embedding_size)
 
         output, (hidden, cell) = self.rnn(embedding, (hidden, cell))
 
-        prediction = self.fc(output.unsqueeze(0))
-        # prediction shape: (1, N, vocab_len)
+        prediction = self.fc(output.squeeze(0))
+        # prediction shape: (1, batch_size, vocab_len)
 
         return prediction, hidden, cell
 
@@ -97,7 +92,7 @@ class Seq2Seq(nn.Module):
         self.encoder=encoder
         self.decoder=decoder
 
-    def forward(self, source, target, teacher_force_ratio=0.7):
+    def forward(self, source, target, teacher_force_ratio=0.5):
         batch_size = source.shape[1]
         target_len = target.shape[0]
         target_vocab_size = self.decoder.output_size
@@ -109,35 +104,15 @@ class Seq2Seq(nn.Module):
         # get start token
         input = target[0, :]
 
-        wrong_input_counter = 0
-
-        for t in range(1, target_len):
-            if input.shape == torch.Size([1, 64, 5893]):
-                wrong_input_counter += 1
-                print(wrong_input_counter)
-                continue
-            
+        for t in range(1, target_len):    
             teacher_force = random.random() < teacher_force_ratio
-            print('teach force')
-            print('\t', teacher_force)
-
-            print('input shape')
-            print('\t', input.shape)
 
             output, hidden, cell = self.decoder(input, hidden, cell)
-            print('output shape')
-            print('\t', output.shape)
 
             outputs[t] = output
         
             best_guess = output.argmax(1)
             # best guess shape:(N, eng_vocab_size)
-            print('best guess shape')
-            print('\t', best_guess.shape)
-
-            print('target[t] shape')
-            print('\t', target[t].shape)
-            print()
 
             input = target[t] if teacher_force else best_guess
 
@@ -173,7 +148,7 @@ encoder_net = Encoder(input_size, encoder_embedding_size, hidden_size, num_layer
 decoder_net = Decoder(output_size, decoder_embedding_size, hidden_size, num_layers, decoder_dropout).to(device)
 model = Seq2Seq(encoder_net, decoder_net).to(device)
 
-pad_idx = english.vocab.stoi['<pad>']
+pad_idx = english.vocab.stoi[english.pad_token]
 criterion = nn.CrossEntropyLoss(ignore_index=pad_idx)
 optimizer = optim.Adam(model.parameters(), lr=lr)
 
