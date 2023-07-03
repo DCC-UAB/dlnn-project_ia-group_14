@@ -9,11 +9,11 @@ import spacy
 import random
 from torch.utils.tensorboard import SummaryWriter  # to print to tensorboard
 
-from utils import translate_sentence, save_checkpoint, load_checkpoint
+from utils.utils import translate_sentence, save_checkpoint, load_checkpoint
 
 # DATA
-spacy_german = spacy.load("de")
-spacy_english = spacy.load("en")
+spacy_german = spacy.load("de_core_news_sm")
+spacy_english = spacy.load("en_core_web_sm")
 
 def tokenizer_german(text):
     return [token.text for token in spacy_german.tokenizer(text)]
@@ -21,10 +21,10 @@ def tokenizer_german(text):
 def tokenizer_english(text):
     return [token.text for token in spacy_english.tokenizer(text)]
 
-german = Field(tokenizer=tokenizer_german, lower=True,
+german = Field(tokenize=tokenizer_german, lower=True,
                 init_token='<sos>', eos_token='<eos>')
 
-english = Field(tokenizer=tokenizer_english, lower=True,
+english = Field(tokenize=tokenizer_english, lower=True,
                 init_token='<sos>', eos_token='<eos>')
 
 train_data, validation_data, test_data=Multi30k.splits(exts=('.de', '.en'),
@@ -33,6 +33,8 @@ train_data, validation_data, test_data=Multi30k.splits(exts=('.de', '.en'),
 german.build_vocab(train_data, max_size=10000, min_freq=2)
 english.build_vocab(train_data, max_size=10000, min_freq=2)
 
+print(f"Unique tokens in source (de) vocabulary: {len(german.vocab)}")
+print(f"Unique tokens in target (en) vocabulary: {len(english.vocab)}")
 
 # MODELS
 class Encoder(nn.Module):
@@ -62,18 +64,18 @@ class Decoder(nn.Module):
         self.num_layers=num_layers
 
         self.dropout=nn.Dropout(p)
-        self.embedding=nn.Embedding(input_size, output_size, embedding_size)
+        self.embedding=nn.Embedding(input_size, embedding_size)
         self.rnn=nn.LSTM(embedding_size, hidden_size, num_layers, dropout=p)
         self.fc=nn.Linear(hidden_size, output_size)
     
     def forward(self, x, hidden, cell):
-        x.unsqueeze(0)
+        x = x.unsqueeze(0)
         # x shape:(1, N)
 
         embedding=self.dropout(self.embedding(x))
         # embedding shape: (1, N, embedding_size)
 
-        outputs, (hidden, cell)=self.rnn(embedding, (hidden, cell))
+        outputs, (hidden, cell) = self.rnn(embedding, (hidden, cell))
 
         prediction=self.fc(outputs)
         # prediction shape: (1, N, vocab_len)
@@ -88,9 +90,10 @@ class Seq2Seq(nn.Module):
         self.encoder=encoder
         self.decoder=decoder
 
-    def forward(self, source, target, teacher_force_ratio):
+    def forward(self, source, target, teacher_force_ratio=0.5):
         batch_size=source.shape[1]
         target_len=target.shape[0]
+        
         target_vocab_size= len(english.vocab)
 
         outputs = torch.zeros(target_len, batch_size, target_vocab_size).to(device)
@@ -101,14 +104,17 @@ class Seq2Seq(nn.Module):
         x = target[0]
 
         for t in range(1, target_len):
+            test = random.random()
+
             output, hidden, cell = self.decoder(x, hidden, cell)
 
             outputs[t] = output
         
-            best_guess=output.argmax(1)
+            best_guess=output.argmax()
             # best guess shape:(N, eng_vocab_size)
 
-            x = target[t] if random.random() < teacher_force_ratio else best_guess
+            print(f'{test} < {teacher_force_ratio} else {best_guess}')
+            x = target[t] if test < teacher_force_ratio else best_guess
 
         return outputs
 
@@ -123,7 +129,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 input_encoder_size = len(german.vocab)
 input_decoder_size = len(english.vocab)
 
-output_size = 1024
+output_size = len(english.vocab)
 encoder_embedding_size = 250
 decoder_embedding_size = 250
 hidden_size=1024
@@ -139,7 +145,7 @@ train_iter, valid_iter, test_iter = BucketIterator.splits(
     (train_data, validation_data, test_data),
     batch_size=batch_size,
     sort_within_batch=True,
-    sprt_key=lambda x: len(x.src),
+    sort_key=lambda x: len(x.src),
     device=device
 )
 
