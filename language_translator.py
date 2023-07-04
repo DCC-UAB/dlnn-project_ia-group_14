@@ -1,4 +1,3 @@
-from posixpath import split
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -119,7 +118,7 @@ class Seq2Seq(nn.Module):
         return outputs
 
 # TRAIN
-num_epochs=1
+num_epochs=10
 lr=0.001
 batch_size= 64
 
@@ -146,27 +145,33 @@ train_iter, valid_iter, test_iter = BucketIterator.splits(
 
 encoder_net = Encoder(input_size, encoder_embedding_size, hidden_size, num_layers, encoder_dropout).to(device)
 decoder_net = Decoder(output_size, decoder_embedding_size, hidden_size, num_layers, decoder_dropout).to(device)
+
 model = Seq2Seq(encoder_net, decoder_net).to(device)
+
+def init_weights(m):
+    for name, param in m.named_parameters():
+        nn.init.uniform_(param.data, -0.08, 0.08)
+        
+model.apply(init_weights)
 
 pad_idx = english.vocab.stoi[english.pad_token]
 criterion = nn.CrossEntropyLoss(ignore_index=pad_idx)
 optimizer = optim.Adam(model.parameters(), lr=lr)
 
 if load_model:
-    load_checkpoint(torch.load('checkpoint_pth.tar'), model, optimizer)
+    load_checkpoint(torch.load('checkpoint.pth.tar'), model, optimizer)
 
 test_sentence = 'Franz jagt im komplett verwahrlosten Taxi quer durch Bayern'
 
 for epoch in range(num_epochs):
     print(f'Epoch: {epoch} / {num_epochs}')
 
-    checkpoint = {'state_dict': model.state_dict, 'optimizer': optimizer.state_dict()}
+    checkpoint = {'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
     save_checkpoint(checkpoint)
 
     model.eval()
 
     translated_sentence = translate_sentence(model, test_sentence, german, english, device, max_length=50)
-
     print(f'Test translated sentence: {translated_sentence}')
 
     model.train()
@@ -194,3 +199,5 @@ for epoch in range(num_epochs):
         step += 1
 
         
+checkpoint = {'state_dict': model.state_dict, 'optimizer': optimizer.state_dict()}
+save_checkpoint(checkpoint)
