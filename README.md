@@ -17,22 +17,11 @@ https://github.com/OValery16/Language-Translation-with-deep-learning-
 
 
 ## Code structure
-As of now all the code exists in the `bailey_test.py` file.
-We have had trouble getting the models to train and for simplicity reasons I have wrote all my code in one file.
+We finally manged to distribute the necessary code in the "utils/utils.py" and "language_translation" files. 
 
-## Example Code
-The given code is a simple CNN example training on the MNIST dataset. It shows how to set up the [Weights & Biases](https://wandb.ai/site)  package to monitor how your network is learning, or not.
+These contain the architechture that, after a complete restructuration and change in the point of view of the code, serve us to structure all the necessary functions for running the translator. We left some previous attempts just to keep the progress, as well as other code that help us achieving the goal.
 
-Before running the code you have to create a local environment with conda and activate it. The provided [environment.yml](https://github.com/DCC-UAB/XNAP-Project/environment.yml) file has all the required dependencies. Run the following command: ``conda env create --file environment.yml `` to create a conda environment with all the required dependencies and then activate it:
-```
-conda activate xnap-example
-```
-
-To run the example code:
-```
-python main.py
-```
-
+We also applied the recommendations of the teacher in the previous presentation, applying SpaCy functions to get more optimal results.
 
 
 ## Contributors
