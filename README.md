@@ -11,6 +11,11 @@ In the encoder take the input sentence and pass it through an embedding layer, u
 
 In the decoder we attempt to decode the sentence one word at a time using the context vector generated from the encoder as well as an embedding of the previous word. In the decoder we also use teacher forcing, this is a conditional statement that tells the decoder to use the previously predicted word or the true word which comes from the target data.
 
+Here is an example image of how the encoder-decoder model looks.
+At each step a new context vector is created, in the decoder model we use the context vector aswell as an word embedding as an input.
+![seq2seq1](https://github.com/DCC-UAB/dlnn-project_ia-group_14/assets/31530319/41dc71ab-4c0b-4980-83a3-fa93082f80f5)
+
+
 ### Data
 We used the Multi30k dataset and spaCy for tokenizatoin. 
 Multi30k is a dataset with 30000 english and german sentences, each with 12 words.
