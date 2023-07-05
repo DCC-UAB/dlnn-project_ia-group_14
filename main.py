@@ -1,62 +1,78 @@
-import os
-import random
-import wandb
-
-import numpy as np
 import torch
 import torch.nn as nn
-import torchvision
-import torchvision.transforms as transforms
+import torch.optim as optim
 
-from train import *
-from test import *
-from utils.utils import *
-from tqdm.auto import tqdm
+from torchtext.datasets import Multi30k
+from torchtext.data import Field, BucketIterator
 
-# Ensure deterministic behavior
-torch.backends.cudnn.deterministic = True
-random.seed(hash("setting random seeds") % 2**32 - 1)
-np.random.seed(hash("improves reproducibility") % 2**32 - 1)
-torch.manual_seed(hash("by removing stochasticity") % 2**32 - 1)
-torch.cuda.manual_seed_all(hash("so runs are repeatable") % 2**32 - 1)
+import numpy as np
+import spacy
+import random
 
-# Device configuration
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+from utils.utils import translate_sentence, save_checkpoint, load_checkpoint
+from models.models import Encoder, Decoder, Seq2Seq
 
-# remove slow mirror from list of MNIST mirrors
-torchvision.datasets.MNIST.mirrors = [mirror for mirror in torchvision.datasets.MNIST.mirrors
-                                      if not mirror.startswith("http://yann.lecun.com")]
+# DATA
+spacy_german = spacy.load("de_core_news_sm")
+spacy_english = spacy.load("en_core_web_sm")
 
+def tokenizer_german(text):
+    return [token.text for token in spacy_german.tokenizer(text)] # [::-1]
 
+def tokenizer_english(text):
+    return [token.text for token in spacy_english.tokenizer(text)]
 
+german = Field(tokenize=tokenizer_german, lower=True,
+                init_token='<sos>', eos_token='<eos>')
 
-def model_pipeline(cfg:dict) -> None:
-    # tell wandb to get started
-    with wandb.init(project="pytorch-demo", config=cfg):
-      # access all HPs through wandb.config, so logging matches execution!
-      config = wandb.config
+english = Field(tokenize=tokenizer_english, lower=True,
+                init_token='<sos>', eos_token='<eos>')
 
-      # make the model, data, and optimization problem
-      model, train_loader, test_loader, criterion, optimizer = make(config)
+train_data, validation_data, test_data=Multi30k.splits(
+    exts=('.de', '.en'),
+    fields=(german, english)
+)
 
-      # and use them to train the model
-      train(model, train_loader, criterion, optimizer, config)
+german.build_vocab(train_data, max_size=10000, min_freq=2)
+english.build_vocab(train_data, max_size=10000, min_freq=2)
 
-      # and test its final performance
-      test(model, test_loader)
+load_model=False
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    return model
+batch_size=64
 
-if __name__ == "__main__":
-    wandb.login()
+input_size = len(german.vocab)
+output_size = len(english.vocab)
+encoder_embedding_size = 250
+decoder_embedding_size = 250
+hidden_size=512
+num_layers=2
+encoder_dropout=0.5
+decoder_dropout=0.5
+lr=0.001
 
-    config = dict(
-        epochs=5,
-        classes=10,
-        kernels=[16, 32],
-        batch_size=128,
-        learning_rate=5e-3,
-        dataset="MNIST",
-        architecture="CNN")
-    model = model_pipeline(config)
+step=0
 
+train_iter, valid_iter, test_iter = BucketIterator.splits(
+    (train_data, validation_data, test_data),
+    batch_size=batch_size,
+    device=device
+)
+
+encoder_net = Encoder(input_size, encoder_embedding_size, hidden_size, num_layers, encoder_dropout).to(device)
+decoder_net = Decoder(output_size, decoder_embedding_size, hidden_size, num_layers, decoder_dropout).to(device)
+
+model = Seq2Seq(encoder_net, decoder_net, device).to(device)
+
+optimizer = optim.Adam(model.parameters(), lr=lr)
+
+load_checkpoint(torch.load('checkpoint.pth'), model, optimizer)
+
+test_sentence = 'Franz jagt im komplett verwahrlosten Taxi quer durch Bayern'
+
+translated_sentence = ' '.join(translate_sentence(model, test_sentence, german, english, device, max_length=50))
+
+print()
+print(f'Input sentence: \n{test_sentence}')
+print()
+print(f'Translated sentence: \n{translated_sentence}')
