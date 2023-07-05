@@ -19,7 +19,7 @@ spaCy is a module that contains helper functions for language processing.
 We convert each sentence into a list of tokens e.g. `This is a sentence!` becomes `['This', 'is', 'a', 'sentence', '!']`, we also convert all characters to lower case for normalization.
 
 ### Loss
-<img width="881" alt="loss" src="https://github.com/DCC-UAB/dlnn-project_ia-group_14/pics/loss.png">
+<img width="881" alt="loss" src="https://github.com/DCC-UAB/dlnn-project_ia-group_14/assets/31530319/54cc228f-ae46-4220-b88e-326b8d9bb578">
 
 
 ## Getting started
