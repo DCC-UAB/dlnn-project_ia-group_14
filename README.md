@@ -24,7 +24,8 @@ spaCy is a module that contains helper functions for language processing.
 We convert each sentence into a list of tokens e.g. `This is a sentence!` becomes `['This', 'is', 'a', 'sentence', '!']`, we also convert all characters to lower case for normalization.
 
 ### Loss
-[![loss](./pics/loss.png)]
+In the end the best loss achieved was: 0.7839
+![loss](./pics/loss.png)
 
 
 ## Getting started
