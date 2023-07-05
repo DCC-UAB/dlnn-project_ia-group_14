@@ -43,7 +43,7 @@ def translate_sentence (model, test_sentence, german, english, device, max_lengt
     return translated[1:]
 
 
-def save_checkpoint (checkpoint, filename="checkpoint.pth.tar"):
+def save_checkpoint (checkpoint, filename="checkpoint.pth"):
     print("=> Saving checkpoint")
     torch.save(checkpoint, filename)
 

@@ -1,57 +1,83 @@
-from ast import Pass
-from turtle import forward
 import torch.nn as nn
 import torch
+import random
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+# MODELS
+class Encoder(nn.Module):
+    def __init__(self, input_size, embedding_size, hidden_size, num_layers, p):
+        super(Encoder, self).__init__()
+        self.hidden_size=hidden_size
+        self.num_layers=num_layers
 
-class EncoderRNN(nn.Module):
-    def __init__(self, input_size, hidden_size):
-        super(EncoderRNN, self).__init__()
-        self.hidden_size = hidden_size
-        self.embedding = nn.Embedding(input_size, hidden_size)
-        self.gru = nn.GRU(hidden_size, hidden_size)
+        self.dropout = nn.Dropout(p)
+        self.embedding = nn.Embedding(input_size, embedding_size)
+        self.rnn = nn.LSTM(embedding_size, hidden_size, num_layers, dropout=p)
 
-    def forward(self, input_seq):
-        embedded = self.embedding(input_seq)
-        outputs, hidden = self.gru(embedded)
-        return outputs, hidden
-
-class DecoderRNN(nn.Module):
-    def __init__(self, output_size, hidden_size):
-        super(DecoderRNN, self).__init__()
-        self.hidden_size = hidden_size
-        self.embedding = nn.Embedding(output_size, hidden_size)
-        self.gru = nn.GRU(hidden_size, hidden_size)
-        self.fc = nn.Linear(hidden_size, output_size)
-        self.softmax = nn.Softmax(dim=2)
-
-    def forward(self, input_seq, hidden):
-        embedded = self.embedding(input_seq)
-        output, hidden = self.gru(embedded, hidden)
-        output = self.fc(output)
-        output = self.softmax(output)
-        return output, hidden
-
-# Conventional and convolutional neural network - This is the old nn
-
-class ConvNet(nn.Module):
-    def __init__(self, kernels, classes=10):
-        super(ConvNet, self).__init__()
-        
-        self.layer1 = nn.Sequential(
-            nn.Conv2d(1, kernels[0], kernel_size=5, stride=1, padding=2),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2))
-        self.layer2 = nn.Sequential(
-            nn.Conv2d(16, kernels[1], kernel_size=5, stride=1, padding=2),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2))
-        self.fc = nn.Linear(7 * 7 * kernels[-1], classes)
-        
     def forward(self, x):
-        out = self.layer1(x)
-        out = self.layer2(out)
-        out = out.reshape(out.size(0), -1)
-        out = self.fc(out)
-        return out
+        # x shape: (seq_length, batch_size)
+
+        embedding=self.dropout(self.embedding(x))
+        # embedding shape: (seq_len, batch_size, embedding_size)
+
+        outputs, (hidden, cell) = self.rnn(embedding)
+
+        return hidden, cell
+
+class Decoder(nn.Module):
+    def __init__(self, output_size, embedding_size, hidden_size, num_layers, p):
+        super(Decoder, self).__init__()
+        self.hidden_size=hidden_size
+        self.num_layers=num_layers
+        self.output_size=output_size
+
+        self.dropout=nn.Dropout(p)
+        self.embedding=nn.Embedding(output_size, embedding_size)
+        self.rnn=nn.LSTM(embedding_size, hidden_size, num_layers, dropout=p)
+        self.fc=nn.Linear(hidden_size, output_size)
+    
+    def forward(self, x, hidden, cell):
+        x = x.unsqueeze(0)
+        # x shape:(1, batch_size)
+
+        embedding=self.dropout(self.embedding(x))
+        # embedding shape: (1, batch_size, embedding_size)
+
+        output, (hidden, cell) = self.rnn(embedding, (hidden, cell))
+
+        prediction = self.fc(output.squeeze(0))
+        # prediction shape: (1, batch_size, vocab_len)
+
+        return prediction, hidden, cell
+
+class Seq2Seq(nn.Module):
+    def __init__(self, encoder, decoder, device):
+        super(Seq2Seq, self).__init__()
+        self.encoder=encoder
+        self.decoder=decoder
+        self.device=device
+
+    def forward(self, source, target, teacher_force_ratio=0.5):
+        batch_size = source.shape[1]
+        target_len = target.shape[0]
+        target_vocab_size = self.decoder.output_size
+
+        outputs = torch.zeros(target_len, batch_size, target_vocab_size).to(self.device)
+
+        hidden, cell = self.encoder(source)
+
+        # get start token
+        input = target[0, :]
+
+        for t in range(1, target_len):    
+            teacher_force = random.random() < teacher_force_ratio
+
+            output, hidden, cell = self.decoder(input, hidden, cell)
+
+            outputs[t] = output
+        
+            best_guess = output.argmax(1)
+            # best guess shape:(N, eng_vocab_size)
+
+            input = target[t] if teacher_force else best_guess
+
+        return outputs
