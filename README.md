@@ -65,6 +65,9 @@ This is a basic python file that imports the datasets and models and performs th
 To use:
 `python train.py`
 
+### Utils
+The `utils/utils.py` file contains some helper functions such as `save_checkpoint()` and `load_checkpoint()`
+
 
 # Summary
 
