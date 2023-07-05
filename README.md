@@ -13,7 +13,7 @@ In the decoder we attempt to decode the sentence one word at a time using the co
 
 Here is an example image of how the encoder-decoder model looks.
 At each step a new context vector is created, in the decoder model we use the context vector aswell as an word embedding as an input.
-![seq2seq1](https://github.com/DCC-UAB/dlnn-project_ia-group_14/assets/31530319/41dc71ab-4c0b-4980-83a3-fa93082f80f5)
+[![seq2seq1](./pics/seq2seq1.png)]
 
 
 ### Data
@@ -24,7 +24,7 @@ spaCy is a module that contains helper functions for language processing.
 We convert each sentence into a list of tokens e.g. `This is a sentence!` becomes `['This', 'is', 'a', 'sentence', '!']`, we also convert all characters to lower case for normalization.
 
 ### Loss
-<img width="881" alt="loss" src="https://github.com/DCC-UAB/dlnn-project_ia-group_14/assets/31530319/54cc228f-ae46-4220-b88e-326b8d9bb578">
+[![loss](./pics/loss.png)]
 
 
 ## Getting started
