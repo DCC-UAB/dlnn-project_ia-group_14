@@ -12,6 +12,8 @@ import random
 from utils.utils import translate_sentence, save_checkpoint, load_checkpoint
 from models.models import Encoder, Decoder, Seq2Seq
 
+import sys
+
 # DATA
 spacy_german = spacy.load("de_core_news_sm")
 spacy_english = spacy.load("en_core_web_sm")
@@ -68,11 +70,21 @@ optimizer = optim.Adam(model.parameters(), lr=lr)
 
 load_checkpoint(torch.load('checkpoint.pth'), model, optimizer)
 
-test_sentence = 'Franz jagt im komplett verwahrlosten Taxi quer durch Bayern'
+if __name__ == '__main__':
+    print()
+    model.eval()
+    
+    cmd_input = len(sys.argv) > 1
+    test_sentence = 'Franz jagt im komplett verwahrlosten Taxi quer durch Bayern'
 
-translated_sentence = ' '.join(translate_sentence(model, test_sentence, german, english, device, max_length=50))
+    if cmd_input:
+        test_sentence = sys.argv[1]
+    else:
+        print(f'Using example sentence')
 
-print()
-print(f'Input sentence: \n{test_sentence}')
-print()
-print(f'Translated sentence: \n{translated_sentence}')
+    translated_sentence = ' '.join(translate_sentence(model, test_sentence, german, english, device, max_length=50))
+
+    print()
+    print(f'Input sentence:\n{test_sentence}')
+    print()
+    print(f'Translated sentence:\n{translated_sentence}')
