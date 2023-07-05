@@ -93,6 +93,8 @@ for epoch in range(num_epochs):
 
     model.train()
 
+    best_loss = 1000
+
     for batch_index, batch in enumerate(train_iter):
         input_data = batch.src.to(device)
         target = batch.trg.to(device)
@@ -107,6 +109,8 @@ for epoch in range(num_epochs):
 
         loss = criterion(output, target)
 
+        best_loss = min(best_loss, loss.item())
+
         loss.backward()
 
         torch.nn.utils.clip_grad_norm(model.parameters(), max_norm=1)
@@ -117,3 +121,5 @@ for epoch in range(num_epochs):
 
     checkpoint = {'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
     save_checkpoint(checkpoint)
+
+    print(f'Best loss: {best_loss}')
