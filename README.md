@@ -7,13 +7,17 @@
 The goal of this project was to create a machine learning language translator.
 We used a Encoder-Decoder RNN model that would take a german sentence and attempt to translate it into english.
 
-In the encoder take the input sentence and pass it through an embedding layer, using this embedding we generate a context vector (hidden state) using an RNN layer.
+In the encoder take the input sentence and pass it through an embedding layer, using this embedding we generate a context vector (also known as the hidden state) using an RNN layer.
 
 In the decoder we attempt to decode the sentence one word at a time using the context vector generated from the encoder as well as an embedding of the previous word. In the decoder we also use teacher forcing, this is a conditional statement that tells the decoder to use the previously predicted word or the true word which comes from the target data.
 
+
+### Models
 Here is an example image of how the encoder-decoder model looks.
-At each step a new context vector is created, in the decoder model we use the context vector aswell as an word embedding as an input.
-[![seq2seq1](./pics/seq2seq1.png)]
+At each step in the encoder and decoder a new context vector is created.
+In the encoder we take the word and put it through and embedding layer and use that to generate the context vector.
+In the decoder we feed the context vector and the previous word embedding and use this to generate the next word in the sentence. The next iteration of the RNN will use this as the input.
+![seq2seq1](./pics/seq2seq1.png)
 
 
 ### Data
