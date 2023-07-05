@@ -37,14 +37,12 @@ train_data, validation_data, test_data=Multi30k.splits(
 german.build_vocab(train_data, max_size=10000, min_freq=2)
 english.build_vocab(train_data, max_size=10000, min_freq=2)
 
-print(vars(train_data.examples[11]))
-
 # TRAIN
 num_epochs=20
 lr=0.001
 batch_size= 64
 
-load_model=True
+load_model=False
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 input_size = len(german.vocab)
