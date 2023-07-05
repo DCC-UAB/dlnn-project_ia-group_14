@@ -66,7 +66,7 @@ train_iter, valid_iter, test_iter = BucketIterator.splits(
 encoder_net = Encoder(input_size, encoder_embedding_size, hidden_size, num_layers, encoder_dropout).to(device)
 decoder_net = Decoder(output_size, decoder_embedding_size, hidden_size, num_layers, decoder_dropout).to(device)
 
-model = Seq2Seq(encoder_net, decoder_net, device).to(device)
+model = Seq2Seq(encoder_net, decoder_net, device, 0.5).to(device) #0.5 is teacher force ratio
 
 def init_weights(m):
     for name, param in m.named_parameters():

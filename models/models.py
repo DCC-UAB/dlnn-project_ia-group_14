@@ -50,13 +50,14 @@ class Decoder(nn.Module):
         return prediction, hidden, cell
 
 class Seq2Seq(nn.Module):
-    def __init__(self, encoder, decoder, device):
+    def __init__(self, encoder, decoder, device, teacher_force_ratio):
         super(Seq2Seq, self).__init__()
         self.encoder=encoder
         self.decoder=decoder
+        self.teacher_force_ratio=teacher_force_ratio
         self.device=device
 
-    def forward(self, source, target, teacher_force_ratio=0.5):
+    def forward(self, source, target):
         batch_size = source.shape[1]
         target_len = target.shape[0]
         target_vocab_size = self.decoder.output_size
@@ -69,7 +70,7 @@ class Seq2Seq(nn.Module):
         input = target[0, :]
 
         for t in range(1, target_len):    
-            teacher_force = random.random() < teacher_force_ratio
+            teacher_force = random.random() < self.teacher_force_ratio
 
             output, hidden, cell = self.decoder(input, hidden, cell)
 

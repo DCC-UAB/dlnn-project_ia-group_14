@@ -12,7 +12,11 @@ import random
 from utils.utils import translate_sentence, save_checkpoint, load_checkpoint
 from models.models import Encoder, Decoder, Seq2Seq
 
-import sys
+import argparse
+
+parser = argparse.ArgumentParser(description='A basic language translating model')
+parser.add_argument("--translate", help="Input string in quotes (e.g. 'Hallo!') to be translated", default=None)
+args = parser.parse_args()
 
 # DATA
 spacy_german = spacy.load("de_core_news_sm")
@@ -64,7 +68,7 @@ train_iter, valid_iter, test_iter = BucketIterator.splits(
 encoder_net = Encoder(input_size, encoder_embedding_size, hidden_size, num_layers, encoder_dropout).to(device)
 decoder_net = Decoder(output_size, decoder_embedding_size, hidden_size, num_layers, decoder_dropout).to(device)
 
-model = Seq2Seq(encoder_net, decoder_net, device).to(device)
+model = Seq2Seq(encoder_net, decoder_net, device, 0).to(device) # 0 is teacher force ratio
 
 optimizer = optim.Adam(model.parameters(), lr=lr)
 
@@ -77,17 +81,43 @@ if __name__ == '__main__':
     print()
     model.eval()
 
-    cmd_input = len(sys.argv) > 1
-    test_sentence = 'Franz jagt im komplett verwahrlosten Taxi quer durch Bayern'
+    test_sentence = ''
+    target_sentence = ''
 
-    if cmd_input:
-        test_sentence = sys.argv[1]
+    if args.translate:
+        test_sentence = args.translate
+        translated_sentence = ' '.join(translate_sentence(model, test_sentence, german, english, device, max_length=50)[:-1])
+
+        print(f'Input sentence:\n{test_sentence}')
+        print()
+        print(f'Translated sentence:\n{translated_sentence}')
+        print()
+
+
     else:
-        print(f'Using example sentence')
+        for i in range(10):
+            #cmd_input = len(sys.argv) > 1
+            #test_sentence = 'Franz jagt im komplett verwahrlosten Taxi quer durch Bayern'
 
-    translated_sentence = ' '.join(translate_sentence(model, test_sentence, german, english, device, max_length=50))
+            #if cmd_input:
+            #    test_sentence = sys.argv[1]
+            #else:
+            #    print(f'Using example sentence')
+            rand = random.randint(0, 1000)
 
-    print()
-    print(f'Input sentence:\n{test_sentence}')
-    print()
-    print(f'Translated sentence:\n{translated_sentence}')
+            test_sentence = test_data.examples[rand].src
+            target_sentence = test_data.examples[rand].trg
+
+            test_sentence = ' '.join(test_sentence)
+            target_sentence = ' '.join(target_sentence)[:-1]
+            translated_sentence = ' '.join(translate_sentence(model, test_sentence, german, english, device, max_length=50))
+
+
+            print(f'Test {i}')
+            print(f'Input sentence:\n{test_sentence}')
+            print()
+            print(f'Translated sentence:\n{translated_sentence}')
+            print()
+            print(f'Actual sentence:\n{target_sentence}')
+            print()
+            print()

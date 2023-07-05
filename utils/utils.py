@@ -1,6 +1,5 @@
 import torch
 import spacy
-import sys
 
 def translate_sentence (model, test_sentence, german, english, device, max_length=50):
     
@@ -52,3 +51,5 @@ def load_checkpoint(checkpoint, model, optimizer):
     print("=> Loading checkpoint")
     model.load_state_dict(checkpoint["state_dict"])
     optimizer.load_state_dict(checkpoint["optimizer"])
+
+    
