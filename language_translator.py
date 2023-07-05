@@ -118,7 +118,7 @@ class Seq2Seq(nn.Module):
         return outputs
 
 # TRAIN
-num_epochs=10
+num_epochs=20
 lr=0.001
 batch_size= 64
 
