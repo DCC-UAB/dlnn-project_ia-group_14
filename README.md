@@ -19,11 +19,11 @@ spaCy is a module that contains helper functions for language processing.
 We convert each sentence into a list of tokens e.g. `This is a sentence!` becomes `['This', 'is', 'a', 'sentence', '!']`, we also convert all characters to lower case for normalization.
 
 ### Loss
-<img width="881" alt="loss" src="https://github.com/DCC-UAB/dlnn-project_ia-group_14/assets/31530319/437f5842-5492-453a-abbe-5307e1ad5f33">
+<img width="881" alt="loss" src="https://github.com/DCC-UAB/dlnn-project_ia-group_14/pics/loss.png">
 
 
 ## Getting started
-#### Requirements
+### Requirements
 The environment used in the repo is a conda env generated from the `environment.yml` file.
 
 The required python modules and versions are:
