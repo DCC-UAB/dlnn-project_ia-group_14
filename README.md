@@ -3,25 +3,66 @@
 
 # Neural Networks and Deep Learning - Language Translation
 
-### Objectives
-Create an automatic machine translation model for at least one pair of languages
+## Objectives
+The goal of this project was to create a machine learning language translator.
+We used a Encoder-Decoder RNN model that would take a german sentence and attempt to translate it into english.
 
-### Type of Model
-Seq2Seq RNN
+In the encoder take the input sentence and pass it through an embedding layer, using this embedding we generate a context vector (hidden state) using an RNN layer.
 
-### Dataset
-http://www.manythings.org/anki/
+In the decoder we attempt to decode the sentence one word at a time using the context vector generated from the encoder as well as an embedding of the previous word. In the decoder we also use teacher forcing, this is a conditional statement that tells the decoder to use the previously predicted word or the true word which comes from the target data.
 
-### Getting started link
-https://github.com/OValery16/Language-Translation-with-deep-learning-
+### Data
+We used the Multi30k dataset and spaCy for tokenizatoin. 
+Multi30k is a dataset with 30000 english and german sentences, each with 12 words.
+spaCy is a module that contains helper functions for language processing.
+
+We convert each sentence into a list of tokens e.g. `This is a sentence!` becomes `['This', 'is', 'a', 'sentence', '!']`, we also convert all characters to lower case for normalization.
+
+### Loss
+<img width="881" alt="loss" src="https://github.com/DCC-UAB/dlnn-project_ia-group_14/assets/31530319/437f5842-5492-453a-abbe-5307e1ad5f33">
+
+
+## Getting started
+#### Requirements
+The environment used in the repo is a conda env generated from the `environment.yml` file.
+
+The required python modules and versions are:
+`
+pytorch=1.7.1
+torchtext=0.8.1
+spaCy=3.5.3
+`
+
+### To Activate environment
+`
+conda env create --file environment.yml
+conda activate xnap-example
+`
+
+### Install spaCy Datasets
+`
+python -m spacy download en_core_web_sm
+python -m spacy download de_core_news_sm
+`
+
+### To train model
+`python train.py`
 
 
 ## Code structure
-We finally manged to distribute the necessary code in the "utils/utils.py" and "language_translation" files. 
+### Models
+Models are stored in `models/models.py`
+In this file you will find the Encoder, Decoder and Seq2Seq models that the language translator relies on.
 
-These contain the architechture that, after a complete restructuration and change in the point of view of the code, serve us to structure all the necessary functions for running the translator. We left some previous attempts just to keep the progress, as well as other code that help us achieving the goal.
+### Training
+The training loop is found in `train.py`
+This is a basic python file that imports the datasets and models and performs the training loop. 
+To use:
+`python train.py`
 
-We also applied the recommendations of the teacher in the previous presentation, applying SpaCy functions to get more optimal results.
+
+# Summary
+
 
 
 ## Contributors
