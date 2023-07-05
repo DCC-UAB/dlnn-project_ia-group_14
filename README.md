@@ -32,23 +32,23 @@ We convert each sentence into a list of tokens e.g. `This is a sentence!` become
 The environment used in the repo is a conda env generated from the `environment.yml` file.
 
 The required python modules and versions are:
-`
+```
 pytorch=1.7.1
 torchtext=0.8.1
 spaCy=3.5.3
-`
+```
 
 ### To Activate environment
-`
+```
 conda env create --file environment.yml
 conda activate xnap-example
-`
+```
 
 ### Install spaCy Datasets
-`
+```
 python -m spacy download en_core_web_sm
 python -m spacy download de_core_news_sm
-`
+```
 
 ### To train model
 `python train.py`
@@ -56,14 +56,14 @@ python -m spacy download de_core_news_sm
 
 ## Usage
 To use the model to translate a sentence run the `main.py` file and pass it a german sentence in quotes
-`
+```
 $> python main.py 'Was geht ab'
 $> Input sentence:
 $> Was geht ab
 $>
 $> Translated sentence:
 $> What's up
-`
+```
 
 
 ## Code structure
