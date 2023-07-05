@@ -55,14 +55,26 @@ python -m spacy download de_core_news_sm
 
 
 ## Usage
-To use the model to translate a sentence run the `main.py` file and pass it a german sentence in quotes
+To use the model to translate a sentence run `python main.py --translate 'string to be translate'` or `python main.py` will use 10 examples sentences from the testing data.
 ```
-$> python main.py 'Was geht ab'
+$> python main.py --translate 'Was geht ab'
 $> Input sentence:
 $> Was geht ab
 $>
 $> Translated sentence:
 $> What's up
+
+----------------------------------------
+
+$> python main.py
+$> Input sentence:
+$> personen halten verschiedene arten von trommelschlägeln über unterschiedliche trommeln .
+$> 
+$> Translated sentence:
+$> people are balancing various <unk> various <unk> , possibly their <unk> . <eos>
+$> 
+$> Actual sentence:
+$> people are holding various types of drumsticks above different kinds of drums
 ```
 
 
@@ -82,8 +94,9 @@ The `utils/utils.py` file contains some helper functions such as `save_checkpoin
 
 
 # Summary
-
-
+1. Overall the model was trained for 200 epochs with batches of 64 with each input being a 12 word sentence.
+2. In the end the model seems to perform better when using sentences from the testing data, when translate hand written sentences the model seems to perform pretty poorly. This probably stems from the fact that all sentences used to train the model were a fixed length of 12 words.
+3. The model's accuracy greatly drops off towards the end of the sentences. This could probably be improved if we added attention to the decoder.
 
 ## Contributors
 1675495 - Bailey Yates Armitage\
