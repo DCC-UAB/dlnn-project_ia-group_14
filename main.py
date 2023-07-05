@@ -68,12 +68,15 @@ model = Seq2Seq(encoder_net, decoder_net, device).to(device)
 
 optimizer = optim.Adam(model.parameters(), lr=lr)
 
-load_checkpoint(torch.load('checkpoint.pth'), model, optimizer)
+if torch.cuda.is_available():
+    load_checkpoint(torch.load('checkpoint.pth'), model, optimizer)
+else:
+    load_checkpoint(torch.load('checkpoint.pth', map_location=torch.device('cpu')), model, optimizer)
 
 if __name__ == '__main__':
     print()
     model.eval()
-    
+
     cmd_input = len(sys.argv) > 1
     test_sentence = 'Franz jagt im komplett verwahrlosten Taxi quer durch Bayern'
 
