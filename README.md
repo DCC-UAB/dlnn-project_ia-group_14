@@ -54,6 +54,18 @@ python -m spacy download de_core_news_sm
 `python train.py`
 
 
+## Usage
+To use the model to translate a sentence run the `main.py` file and pass it a german sentence in quotes
+`
+$> python main.py 'Was geht ab'
+$> Input sentence:
+$> Was geht ab
+$>
+$> Translated sentence:
+$> What's up
+`
+
+
 ## Code structure
 ### Models
 Models are stored in `models/models.py`
